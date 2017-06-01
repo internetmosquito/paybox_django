@@ -1,6 +1,6 @@
 #!/usr/bin/python
 # -*- coding: iso8859-1 -*-
-import settings
+import local_settings as settings
 import binascii
 import hashlib
 import hmac
@@ -24,7 +24,8 @@ class Transaction:
             self.action = 'https://tpeweb.paybox.com/cgi/MYchoix_pagepaiement.cgi'
             self.SECRET = settings.SECRETKEYPROD
         else:
-            self.action = 'https://preprod-tpeweb.paybox.com/cgi/MYchoix_pagepaiement.cgi'
+            # self.action = 'https://preprod-tpeweb.paybox.com/cgi/MYchoix_pagepaiement.cgi'
+            self.action = 'https://preprod-tpeweb.e-transactions.fr/cgi/MYchoix_pagepaiement.cgi'
             self.SECRET = settings.SECRETKEYTEST
 
         self.MANDATORY = {
@@ -74,6 +75,7 @@ class Transaction:
     def post_to_paybox(self):
         """ Returns three variables ready to be integrated in an hidden form, in a template
         """
+        import ipdb; ipdb.set_trace()
         self.MANDATORY['PBX_TIME'] = self.MANDATORY['PBX_TIME'].isoformat()
 
         # 978 = €

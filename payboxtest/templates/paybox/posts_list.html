@@ -1,0 +1,14 @@
+{% extends 'paybox/base.html' %}
+{% block content %}
+            {% for post in posts %}
+                <div class="post">
+                    <div class="date">
+                        {{ post.created_date }}
+                    </div>
+                    <h1><a href="{% url 'paybox.views.make_payment' order_reference=post.reference|slugify %}">{{ post.reference }}</a></h1>
+                    <p>Status: {{ post.status }}</p>
+                    <p>Status: {{ post.total_incl_tax }} €</p>
+                    <br>
+                </div>
+            {% endfor %}
+{% endblock content %}
