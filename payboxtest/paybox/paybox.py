@@ -9,7 +9,8 @@ import os
 
 
 class Transaction:
-    """A Paybox System transaction, from your server to the customer's browser, and from Paybox server to yours
+    """
+    A Paybox System transaction, from your server to the customer's browser, and from Paybox server to yours
 
     Attributes:
         MANDATORY	The values nedded to call for a payment
@@ -19,13 +20,17 @@ class Transaction:
 
     def __init__(self, production=False, PBX_TOTAL=None, PBX_CMD=None, PBX_PORTEUR=None, PBX_TIME=None, PBX_REPONDRE_A=None):
         self.production = production
-
+        self.error_url = settings.BASE_URL + 'error_response'
+        if PBX_REPONDRE_A:
+            self.response_url = PBX_REPONDRE_A
+        else:
+            self.response_url = settings.BASE_URL + 'manage_response'
         if self.production:
             self.action = 'https://tpeweb.paybox.com/cgi/MYchoix_pagepaiement.cgi'
             self.SECRET = settings.SECRETKEYPROD
         else:
-            # self.action = 'https://preprod-tpeweb.paybox.com/cgi/MYchoix_pagepaiement.cgi'
-            self.action = 'https://preprod-tpeweb.e-transactions.fr/cgi/MYchoix_pagepaiement.cgi'
+            self.action = 'https://preprod-tpeweb.paybox.com/cgi/MYchoix_pagepaiement.cgi'
+            # self.action = 'https://preprod-tpeweb.e-transactions.fr/cgi/MYchoix_pagepaiement.cgi'
             self.SECRET = settings.SECRETKEYTEST
 
         self.MANDATORY = {
@@ -42,8 +47,8 @@ class Transaction:
         }
 
         self.ACCESSORY = {
-            'PBX_REFUSE': '',		# url de retour en cas de refus de paiement
-            'PBX_REPONDRE_A': PBX_REPONDRE_A,		# url IPN. WARNING. With Trailing slash, otherwise Django 301 to it...
+            'PBX_REFUSE': self.error_url,		# url de retour en cas de refus de paiement
+            'PBX_REPONDRE_A': self.response_url,		# url IPN. WARNING. With Trailing slash, otherwise Django 301 to it...
             'PBX_EFFECTUE': '',		# url de retour en cas de succes
             'PBX_ANNULE': '',		# url de retour en cas d'abandon
             'PBX_LANGUE': 'FRA', 		# 3 Chars. payment language. GBR for English
@@ -73,9 +78,9 @@ class Transaction:
         }
 
     def post_to_paybox(self):
-        """ Returns three variables ready to be integrated in an hidden form, in a template
         """
-        import ipdb; ipdb.set_trace()
+        Returns three variables ready to be integrated in an hidden form, in a template
+        """
         self.MANDATORY['PBX_TIME'] = self.MANDATORY['PBX_TIME'].isoformat()
 
         # 978 = €
@@ -99,7 +104,8 @@ class Transaction:
         }
 
     def construct_html_form(self):
-        """ Returns an html form ready to be used (string)
+        """
+        Returns an html form ready to be used (string)
         """
 
         accessory_fields = '\n'.join(["<input type='hidden' name='{0}' value='{1}'>".format(field, self.ACCESSORY[field]) for field in self.ACCESSORY if self.ACCESSORY[field]])
@@ -151,18 +157,20 @@ class Transaction:
             assert query['AU'][0] == "XXXXXX", "Incorrect Test Authorization Code"
         else:
             assert 'RC' in query, "No Response Code Returned"
-
+        order_total = int(order_total) * 100
         assert query['TO'][0] == str(order_total), "Total does not match"
 
         return {
             'success': True if query['RC'][0] == "00000" else False,
-            'status': self.RESPONSE_CODES.get(query['RC'][0][:-2] + 'xx', self.RESPONSE_CODES.get(query['RC'][0], "Unrecognized Response Code")),
+            'status': self.RESPONSE_CODES.get(query['RC'][0][:-2] + 'xx', self.RESPONSE_CODES.get(query['RC'][0],
+                                                                                                  "Unrecognized Response Code")),
             'auth_code': query['AU'][0] if 'AU' in query else False,
         }
 
     def verify_certificate(self, message, signature):
-        """ Verifies the Paybox certificate, authenticity and alteration.
-            If everything goes well, returns True. Otherwise raise an Error
+        """
+        Verifies the Paybox certificate, authenticity and alteration.
+        If everything goes well, returns True. Otherwise raise an Error
 
         :message: (str), the full url with its args
         :signature: (str), the signature of the message, separated from the url
