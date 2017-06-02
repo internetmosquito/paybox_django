@@ -1,156 +1,106 @@
-# python-Paybox
+# paybox_django
 
-Simple Python class to help you with the integration of the Paybox payment system (Paybox system, not Paybox direct)
+A fork from https://github.com/pmhoudry/pythonPaybox that extends that class with a full Django application so 
+PayBox workflow can be easily tested
 
 ## Requirements
 
-Only the standard library if you intend not to verify the authenticity of the Paybox response via its public key
+* Python 2.7
+* Install the requirements.txt file 
 
-pycryptodome otherwise (recommended)
+`pip install -r requirements.txt`
 
-    sudo pip install pycryptodome
+* You will need ngrok to simulate callback URL when running this locally, get it [here](https://ngrok.com/download)
 
-## Usage
+## Getting Started
 
-Complete the **settings_example.py** file and rename it **settings.py**
+You will need to do several things first before testing.
 
-Calling Paybox from a Django view
+* Create database, or you can use the provided one db.sqlite3
 
-    def paybox_call(request, order_reference):
-     from Paybox import Transaction
-     
-     # Your order object
-     order = get_object_or_404(Order, reference=order_reference)
-	
-     transaction = Transaction(
-      production = False,
-      PBX_TOTAL = order.total,	# total of the transaction, in cents (10€ == 1000) (int)
-      PBX_PORTEUR = order.email,  # customer's email address
-      PBX_TIME = order.date,	# datetime object
-      PBX_CMD = order.reference	# order_reference (str)
-     )
+`python manage.py migrate`
 
-     form_values = transaction.post_to_paybox()
+* Use Django command to generate new orders
 
-     return render(request, 'payment.html', {
-      'action': form_values['action'],
-      'mandatory': form_values['mandatory'],
-      'accessory': form_values['accessory'],
-     })
+`python manage.py generate_orders <number of orders>`
 
-How to organise the variables in a Django template
+* Start ngrok to create real URL on Django listening port
 
-    <form method="POST" action="{{ action }}">
-	<input type="hidden" name="PBX_SITE" value="{{ mandatory.PBX_SITE }}">
-	<input type="hidden" name="PBX_RANG" value="{{ mandatory.PBX_RANG }}">
-	<input type="hidden" name="PBX_IDENTIFIANT" value="{{ mandatory.PBX_IDENTIFIANT }}">
-	<input type="hidden" name="PBX_TOTAL" value="{{ mandatory.PBX_TOTAL }}">
-	<input type="hidden" name="PBX_DEVISE" value="{{ mandatory.PBX_DEVISE }}">
-	<input type="hidden" name="PBX_CMD" value="{{ mandatory.PBX_CMD }}">
-	<input type="hidden" name="PBX_PORTEUR" value="{{ mandatory.PBX_PORTEUR }}">
-	<input type="hidden" name="PBX_RETOUR" value="{{ mandatory.PBX_RETOUR }}">
-	<input type="hidden" name="PBX_HASH" value="{{ mandatory.PBX_HASH }}">
-	<input type="hidden" name="PBX_TIME" value="{{ mandatory.PBX_TIME }}">
-	<input type="hidden" name="PBX_HMAC" value="{{ mandatory.hmac }}">
-	{% for name, value in accessory.items %}
-		{% if value %}
-			<input type="hidden" name="{{ name }}" value="{{ value }}">
-		{% endif %}
-	{% endfor %}
-	<input type="submit" value="Proceed to payment">
-</form>
+`./ngrok http 8000`
 
-Receiving an Instant Payment Notification in a Django view
+* Copy the provided URL from ngrok to variable BASE_URL in file payboxtest/paybox/local_settings.py, for instance
 
-    def ipn(request):
-     from Paybox import Transaction
-     
-     # Your order object
-     order = get_object_or_404(Order, reference=request.GET.get('RE'))
-	
-     transaction = Transaction()
-     notification = transaction.verify_notification(response_url=request.get_full_path(), order_total=order.total)
-	
-     order.payment = notification['success']	  	 # Boolean
-     order.payment_status = notification['status']   	 # Paybox Status Message
-     order.payment_auth_code = notification['auth_code'] # Authorization Code returned by Payment Center
-     order.save()
-    
-     # Paybox Requires a blank 200 response
-     return HttpResponse('')
+`BASE_URL = 'http://22566bf6.ngrok.io/'`
 
-## Understanding the Paybox Flow
+* Change the following values in payboxtest/paybox/local_settings.py with your pre-production crendetials, production ones or [testing ones from Paybox] (http://www1.paybox.com/espace-integrateur-documentation/comptes-de-tests-2/?lang=en) 
 
-1. The customer comes to your website and add an item to his basket
+`SECRETKEYPROD = '' -> Only if you plan to use production values`
+`SECRETKEYTEST = '' -> Either own test SECRET KEY or the one from Paybox, you'll need to login to back-office to obtain this key with testing credentials`
+`PBX_SITE = '' -> Seven digits number`
+`PBX_IDENTIFIANT = '' -> Nine digits number`
+`PBX_RANG = '' -> Two digits number`
 
-2. He creates an account and validates the purchase (or not but you may validate his email address before sending it to Paybox)
+* Ready to fire up the server
 
-3. The purchase is stored in your database, payment set to False (or whatever column you prefer)
+`python manage.py runserver`
 
-4. Your server constructs an html page which redirects the customer to the Paybox website via an hidden form (variables are sent in POST, and you may trigger the redirection automatically via javascript)
-	
-> post_to_paybox()
+* Either visit localhost:8000 or the URL provided by ngrok
 
-> construct_html_form()
+* You'll be confronted with a list of orders, clicking in the UUID of one of the orders will take you to the view that has the embedded form to send the request to PayBox for a Payment. 
 
-5. Your customer pays, and Paybox send a confirmation to your server. You verify the authenticity of the Paybox callback request, set payment to True and send your customer a thank you email.
+* Clicking "Proceed to payment" button will send the request and show the PayBox payment selection view.
 
-To set your IPN url you have to contact customer support. Your ipn url MUST NOT trigger any sort of redirection. Beware of 301 between http:// and http://www.
+* You can select any payment method from there, and use testing (if testing) [cards from PayBox](http://www1.paybox.com/espace-integrateur-documentation/les-cartes-de-test/?lang=en).
+ 
+* Once you enter payment data, click on Valider and you'll be confronted with Receipt PayBox page, where you can click to return to our site.
+ 
+* If everything goes well, you'll see a success page saying Congratulations. Otherwise you'll see an error page.
 
-> verify_notification(response, order_reference, order_total, verify_certificate=True)
 
-> verify_certificate(message, signature)
+# How this works
 
-6. The customer is redirected by the Paybox server on a confirmation page on your server. You may configure this in the Paybox admin. Paybox returns a few variables. Don't do any sort of validation on those urls.
+When sending the request form, we use the provided Transaction class, use the 
 
-## Paybox installation
+`post_to_paybox`
 
-### Mandatory variables to be sent by the customer's browser with the payment request :
+Method to sign the request to be sent to Paybox and generate the HMAC key to be sent along the request. The HMAC is based on this signature, 
+a combination of mandatory paramenters, optional for PayBox.
 
-	PBX_SITE (given by Paybox)
-	PBX_RANG (Paybox gives you a three digit number, take the last two)
-	PBX_IDENTIFIANT (given by Paybox)
-	PBX_TOTAL (in cents. 10$ = 1000)
-	PBX_DEVISE (number, 978 for €)
-	PBX_PORTEUR (email address of the customer)
-	PBX_RETOUR (list of variables that paybox will return with the payment confirmation)
-	PBX_HASH (How you've keyed-hashed your message. SHA512 in this app)
-	PBX_TIME (ISO 8601 Format)
-	PBX_HMAC 
+Along the optional data we pass several parameters, specially important one are:
 
-### How to send a valid payment call to Paybox
+* PBX_REFUSE: The URL to be called if there is an error, will be /error_response in our case
+* PBX_REPONDRE_A: This is the IPN (Instant Payment Notification URL), deals with the response from PayBox no matter what the customer did, it is important since will update order status. In our case this URL will be /manage_response
+* PBX_EFFECTUE: The URL to be called when everything goes well and customer wants to return to our site, in our case /success
+* PBX_ANNULE: The URL to be called if purchase in canceled, will be /error_response in our case
 
-1. Connect to http://preprod-admin.paybox.com to generate a valid secret key. Copy it in the settings of your app or any place SAFE. When in prod, generate a new secret key by going to http://admin.paybox.com
 
-2. In the admin interface, define your redirection urls, and contact the support to set your ipn url
+The mandatory parameters to be sent are:
 
-3. Connect everything via your router or anything you're using.
+* PBX_SITE -> Defined in local_settings.py
+* PBX_RANG -> Defined in local_settings.py
+* PBX_IDENTIFIANT -> Defined in local_settings.py
+* PBX_TOTAL -> Obtained from order.total_incl_tax and converted to cents
+* PBX_DEVISE -> (number, 978 for €)
+* PBX_PORTEUR -> Obtained from order.customer.email
+* PBX_RETOUR -> (list of variables that paybox will return with the payment confirmation)
+* PBX_HASH -> (How you've keyed-hashed your message. SHA512 in this app)
+* PBX_TIME -> Obtainer from order.created_date (ISO 8601 Format)
+* PBX_HMAC -> Generated by Transaction.post_to_paybox
 
-4. In case of trouble, verify that all your mandatory variables are valid. Especially SITE, RANG, IDENTIFIANT. The app constructs a valid redirection form if all your variables are ok.
 
-5. With corrects values for all the variables, the method **post_to_paybox()** constructs a HMAC that ensure the variables are transmitted unaltered to the Paybox server.
+When /manage_payment is called, we verify the request provided to make sure it comes from PayBox, using the method
 
-## Methods
+`verify_notification`
 
-### post_to_paybox()
+That will check that incoming request is signed correctly from PayBox and amount matches the one sent in the first request.
 
-returns two dicts :
+If everything goes well, order status changes from PENDING to PAID afterwards.
 
-- mandatory, which contains all the mandatory variables unordered
-- accessory, which contains all the other variables you may send to Paybox
+All the pages from Paybox - Payment method selection, payment data input, receipt, are customizable, but we're using default ones here.
 
-### construct_html_form()
 
-returns a string, which is a valid html form ready to be put inside a template for example
+# TODO
 
-### verify_notification(response, order_reference, order_total, verify_certificate=True)
-
-returns three strings in a dict :
-
-- success, True if the payment is successful
-- status, Paybox status message
-- auth_code, The Authorization Number sent by the Payment Center
-
-### verify_certificate(message, signature)
-
-return True if everything is ok, and horrible errors if the verification fails. This is automatically called by the *verify_notification* method, unless you decide otherwise.
+* Add form to create order from main page
+* Add Docker file to run this in a container
+* Testing
