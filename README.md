@@ -34,12 +34,15 @@ You will need to do several things first before testing.
 
 * Change the following values in payboxtest/paybox/local_settings.py with your pre-production crendetials, production ones or [testing ones from Paybox](http://www1.paybox.com/espace-integrateur-documentation/comptes-de-tests-2/?lang=en) 
 
-* SECRETKEYPROD -> Only if you plan to use production values
+**SECRETKEYPROD** -> Only if you plan to use production values
 
-* SECRETKEYTEST -> Either own test SECRET KEY or the one from Paybox, you'll need to login to back-office to obtain this key with testing credentials
-* PBX_SITE -> Seven digits number
-* PBX_IDENTIFIANT -> Nine digits number
-* PBX_RANG -> Two digits number
+**SECRETKEYTEST** -> Either own test SECRET KEY or the one from Paybox, you'll need to login to back-office to obtain this key with testing credentials
+
+**PBX_SITE** -> Seven digits number
+
+**PBX_IDENTIFIANT** -> Nine digits number
+
+**PBX_RANG** -> Two digits number
 
 * Ready to fire up the server
 
