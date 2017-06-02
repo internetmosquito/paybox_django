@@ -1,6 +1,6 @@
 # paybox_django
 
-A fork from https://github.com/pmhoudry/pythonPaybox that extends that class with a full Django application so 
+A fork from [this repo](https://github.com/pmhoudry/pythonPaybox) that extends that class with a full Django application so 
 PayBox workflow can be easily tested
 
 ## Requirements
@@ -32,13 +32,14 @@ You will need to do several things first before testing.
 
 `BASE_URL = 'http://22566bf6.ngrok.io/'`
 
-* Change the following values in payboxtest/paybox/local_settings.py with your pre-production crendetials, production ones or [testing ones from Paybox] (http://www1.paybox.com/espace-integrateur-documentation/comptes-de-tests-2/?lang=en) 
+* Change the following values in payboxtest/paybox/local_settings.py with your pre-production crendetials, production ones or [testing ones from Paybox](http://www1.paybox.com/espace-integrateur-documentation/comptes-de-tests-2/?lang=en) 
 
-`SECRETKEYPROD = '' -> Only if you plan to use production values`
-`SECRETKEYTEST = '' -> Either own test SECRET KEY or the one from Paybox, you'll need to login to back-office to obtain this key with testing credentials`
-`PBX_SITE = '' -> Seven digits number`
-`PBX_IDENTIFIANT = '' -> Nine digits number`
-`PBX_RANG = '' -> Two digits number`
+* SECRETKEYPROD -> Only if you plan to use production values
+
+* SECRETKEYTEST -> Either own test SECRET KEY or the one from Paybox, you'll need to login to back-office to obtain this key with testing credentials
+* PBX_SITE -> Seven digits number
+* PBX_IDENTIFIANT -> Nine digits number
+* PBX_RANG -> Two digits number
 
 * Ready to fire up the server
 
@@ -99,7 +100,7 @@ If everything goes well, order status changes from PENDING to PAID afterwards.
 All the pages from Paybox - Payment method selection, payment data input, receipt, are customizable, but we're using default ones here.
 
 
-# TODO
+# Things to do
 
 * Add form to create order from main page
 * Add Docker file to run this in a container
