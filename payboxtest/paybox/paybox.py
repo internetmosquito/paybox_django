@@ -21,6 +21,7 @@ class Transaction:
     def __init__(self, production=False, PBX_TOTAL=None, PBX_CMD=None, PBX_PORTEUR=None, PBX_TIME=None, PBX_REPONDRE_A=None):
         self.production = production
         self.error_url = settings.BASE_URL + 'error_response'
+        self.success_url = settings.BASE_URL + 'success'
         if PBX_REPONDRE_A:
             self.response_url = PBX_REPONDRE_A
         else:
@@ -49,8 +50,8 @@ class Transaction:
         self.ACCESSORY = {
             'PBX_REFUSE': self.error_url,		# url de retour en cas de refus de paiement
             'PBX_REPONDRE_A': self.response_url,		# url IPN. WARNING. With Trailing slash, otherwise Django 301 to it...
-            'PBX_EFFECTUE': '',		# url de retour en cas de succes
-            'PBX_ANNULE': '',		# url de retour en cas d'abandon
+            'PBX_EFFECTUE': self.success_url,		# url de retour en cas de succes
+            'PBX_ANNULE': self.error_url,		# url de retour en cas d'abandon
             'PBX_LANGUE': 'FRA', 		# 3 Chars. payment language. GBR for English
         }
 
@@ -82,7 +83,6 @@ class Transaction:
         Returns three variables ready to be integrated in an hidden form, in a template
         """
         self.MANDATORY['PBX_TIME'] = self.MANDATORY['PBX_TIME'].isoformat()
-
         # 978 = €
         self.MANDATORY['PBX_DEVISE'] = '978'
 

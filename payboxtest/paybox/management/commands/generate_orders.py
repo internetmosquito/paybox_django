@@ -8,19 +8,25 @@ from django.contrib.auth.models import User
 
 
 class Command(BaseCommand):
+    """
+    A simple Command to generate orders with random total amount but same client,
+    will delete previous PAID ones, since PayBox will not accept a transaction with
+    a used order reference
+    Usage:
+        python manage.py generate_order <num_orders>
+    """
     help = 'Creates random orders, as many as specified'
 
     def add_arguments(self, parser):
         parser.add_argument('orders', type=int)
 
     def handle(self, *args, **options):
-        import ipdb; ipdb.set_trace()
         n_orders = options['orders']
         john_smith, _ = User.objects.get_or_create(username='johnsmith')
         john_smith.email = 'john@smith.com'
         john_smith.save()
         # Remove all previus orders
-        Post.objects.all().delete()
+        Post.objects.filter(status__in='PAID').delete()
 
         for i in range(0, n_orders):
             order = Post()

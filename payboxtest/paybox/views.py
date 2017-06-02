@@ -5,7 +5,6 @@ from .models import Post
 from .paybox import Transaction
 
 
-# Create your views here.
 def post_list(request):
     posts = Post.objects.filter(created_date__lte=timezone.now()).order_by('created_date')
     return render(request, 'paybox/posts_list.html', {'posts': posts})
@@ -14,34 +13,26 @@ def post_list(request):
 def manage_response(request):
     # Your order object
     order = get_object_or_404(Post, reference=request.GET.get('RE'))
-
     transaction = Transaction()
-    notification = transaction.verify_notification(response_url=request.get_full_path(), order_total=order.total_incl_tax)
-
-    order.payment = notification['success']	  	 # Boolean
-    order.payment_status = notification['status']   	 # Paybox Status Message
-    order.payment_auth_code = notification['auth_code'] # Authorization Code returned by Payment Center
+    notification = transaction.verify_notification(response_url=request.get_full_path(),
+                                                   order_total=order.total_incl_tax)
+    status = notification['status']   	 # Paybox Status Message
+    if status == 'Success':
+        order.status = 'PAID'
     order.save()
-
     # Paybox Requires a blank 200 response
     return HttpResponse('')
 
 
 def error_response(request):
-    import ipdb; ipdb.set_trace()
-    # Your order object
-    order = get_object_or_404(Post, reference=request.GET.get('RE'))
-
+    status_code = request.GET.get('RC')
     transaction = Transaction()
-    notification = transaction.verify_notification(response_url=request.get_full_path(), order_total=order.total)
+    error_message = transaction.RESPONSE_CODES[status_code]
+    return render(request, 'paybox/error.html', {'error_message': error_message})
 
-    order.payment = notification['success']	  	 # Boolean
-    order.payment_status = notification['status']   	 # Paybox Status Message
-    order.payment_auth_code = notification['auth_code'] # Authorization Code returned by Payment Center
-    order.save()
 
-    # Paybox Requires a blank 200 response
-    return HttpResponse('')
+def success_response(request):
+    return render(request, 'paybox/success.html', {})
 
 
 def make_payment(request, order_reference):
@@ -62,4 +53,3 @@ def make_payment(request, order_reference):
         'mandatory': form_values['mandatory'],
         'accessory': form_values['accessory'],
     })
-    # return render(request, 'paybox/make_payment.html', {})

@@ -1,0 +1,7 @@
+{% extends 'paybox/base.html' %}
+{% block content %}
+<div class="jumbotron">
+  <h1>Yikes! Something went wrong!</h1>
+  <div class="alert alert-danger" role="alert">We are sorry, but looks like something went pretty bad with that last payment! {{error_message}}</div>
+</div>
+{% endblock content %}

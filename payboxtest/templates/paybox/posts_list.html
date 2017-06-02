@@ -6,8 +6,14 @@
                         {{ post.created_date }}
                     </div>
                     <h1><a href="{% url 'paybox.views.make_payment' order_reference=post.reference|slugify %}">{{ post.reference }}</a></h1>
-                    <p>Status: {{ post.status }}</p>
-                    <p>Status: {{ post.total_incl_tax }} €</p>
+                    <p>Status:
+                        {% if post.status == "PENDING" %}
+                            <span class="label label-warning">PENDING</span>
+                        {% else %}
+                            <span class="label label-success">PAID</span>
+                        {% endif %}
+                    </p>
+                    <p>Amount: {{ post.total_incl_tax }} €</p>
                     <br>
                 </div>
             {% endfor %}
